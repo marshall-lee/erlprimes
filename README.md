@@ -1,4 +1,4 @@
-erlprimes
+Erlprimes
 =========
 
-sum of prime numbers in erlang
+Sum of prime numbers in Erlang.
