@@ -5,7 +5,7 @@ iteration(Lim, N, I, S) when I =< Lim ->
     IsPrime = sieve:get(I,S),
     case IsPrime of
         true  -> iteration(Lim, N, I + 2, sieve:process(I * I, N, I, S));
-        false -> iteration(Lim, N, I + 2, S)
+        _ -> iteration(Lim, N, I + 2, S)
     end;
 iteration(_, _, _, S) ->
     S.
