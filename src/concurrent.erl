@@ -1,31 +1,23 @@
 -module(concurrent).
 -export([primes/3]).
--export([process/4]).
 
--define(CHUNKSIZE, 100000).
-
-process(Pid, SievingPrimes, First, Last) ->
-    process_flag(priority, max),
-    Primes = segmented:primes(SievingPrimes, First, Last),
-    Pid ! Primes.
-
-primes_r(SievingPrimes, First, Last, ProcessCount) when First =< Last ->
-    Last_ = if
-        First + ?CHUNKSIZE =< Last -> First + ?CHUNKSIZE - 1;
-        true                       -> Last
-    end,
-    spawn(concurrent, process, [self(), SievingPrimes, First, Last_]),
-    primes_r(SievingPrimes, First + ?CHUNKSIZE, Last, ProcessCount + 1);
-primes_r(_, _, _, ProcessCount) ->
-    primes_r_collect(ProcessCount, []).
-primes_r_collect(ProcessCount, Primes) when ProcessCount > 0 ->
-    receive
-        NewPrimes -> primes_r_collect(ProcessCount - 1, Primes ++ NewPrimes)
-    end;
-primes_r_collect(_, Primes) ->
-    lists:sort(Primes).
+-define(CHUNKSIZE, 1000).
 
 primes(SievingPrimes, First, Last) when First rem 2 == 0 ->
     primes(SievingPrimes, First + 1, Last);
 primes(SievingPrimes, First, Last) ->
-    primes_r(SievingPrimes, First, Last, 0).
+    Self = self(),
+    Starts = lists:seq(First, Last, ?CHUNKSIZE),
+    lists:foreach(fun(First_) ->
+                          Last_ = case (First_ + ?CHUNKSIZE =< Last) of
+                                      true -> First_ + ?CHUNKSIZE - 1;
+                                      false -> Last
+                                  end,
+                          spawn(fun() ->
+                                        Primes = segmented:primes(SievingPrimes, First_, Last_),
+                                        Self ! Primes
+                                end)
+                  end, Starts),
+    ListOfLists = lists:filter(fun(X) -> X /= [] end, [ receive Primes -> Primes end || _ <- Starts ]),
+    lists:flatten(lists:sort(fun([ X1 | _ ], [ X2 | _ ]) -> X1 =< X2 end, ListOfLists)).
+
