@@ -4,12 +4,9 @@
 -export([benchmark/1, run_concurrent/1, run_segmented/1]).
 
 main(_) ->
-    true = code:add_pathz("../../ebin"),
+    true = code:add_pathz("../ebin"),
     lists:foreach(fun(N) -> spawn(?MODULE, benchmark, [N]) end, [100, 2000, 40000, 800000]),
-    benchmark(1000000).
-
-stop(_State) ->
-    ok.
+    benchmark(4000000).
 
 seconds(M, F, A) ->
     {Seconds, _} = timer:tc(M, F, A),
@@ -36,4 +33,4 @@ run_segmented(N) ->
 benchmark(N) ->
     T1 = seconds(?MODULE, run_segmented, [N]),
     T2 = seconds(?MODULE, run_concurrent, [N]),
-    io:format("N = ~w: ~f vs ~f seconds~n", [N, T1, T2]).
+    io:format("% for N = ~w: ~f vs ~f seconds~n", [N, T1, T2]).
